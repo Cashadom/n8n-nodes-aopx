@@ -1,0 +1,60 @@
+{
+  "name": "n8n-nodes-aopx",
+  "version": "0.1.0-beta.4",
+  "description": "AOPX evidence-based provider selection for software-agent search workflows.",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "aopx",
+    "ai-agents",
+    "search",
+    "provider-routing",
+    "fallback",
+    "evidence"
+  ],
+  "license": "MIT",
+  "homepage": "https://aopx.fr",
+  "author": {
+    "name": "AOPX Labs",
+    "email": "contact@aopx.fr"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aopx-labs/n8n-nodes-aopx.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "lint": "eslint nodes credentials --ext .ts",
+    "lintfix": "eslint nodes credentials --ext .ts --fix",
+    "prepublishOnly": "npm run build && npm run lint",
+    "pack:check": "npm pack --dry-run"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/AopxApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Aopx/Aopx.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.0",
+    "gulp": "^4.0.2",
+    "n8n-workflow": "^1.0.0",
+    "typescript": "^5.5.4"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
