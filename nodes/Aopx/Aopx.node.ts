@@ -586,7 +586,7 @@ export class Aopx implements INodeType {
           response = {
             ...apiResponse,
             aopx_n8n_beta: {
-              node_version: '0.1.0-beta.6',
+              node_version: '0.1.0-beta.7',
               operation: 'recommendProvider',
               ...evidenceMetadata(profile),
               execution_note:
@@ -828,7 +828,7 @@ export class Aopx implements INodeType {
           response = {
             ...apiResponse,
             aopx_n8n_beta: {
-              node_version: '0.1.0-beta.6',
+              node_version: '0.1.0-beta.7',
               operation: 'reportOutcome',
               evidence_status: 'REPORTED_PRODUCTION_OUTCOME',
               evidence_note:
@@ -863,7 +863,7 @@ export class Aopx implements INodeType {
           response = {
             ...apiResponse,
             aopx_n8n_beta: {
-              node_version: '0.1.0-beta.6',
+              node_version: '0.1.0-beta.7',
               operation: 'getPublicStats',
               evidence_note:
                 'Public stats are production-outcome aggregates. Benchmarks, tests, shadow runs, and replays are separate evidence classes.',
@@ -899,8 +899,12 @@ export class Aopx implements INodeType {
           continue;
         }
 
-        if (error instanceof NodeOperationError || error instanceof NodeApiError) {
-          throw error;
+        if (error instanceof NodeOperationError) {
+          throw new NodeOperationError(
+            this.getNode(),
+            error.message,
+            { itemIndex },
+          );
         }
 
         throw new NodeApiError(
