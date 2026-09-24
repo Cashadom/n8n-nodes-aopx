@@ -4,15 +4,17 @@ import type {
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
+  JsonObject,
 } from 'n8n-workflow';
 
 import {
+  NodeApiError,
+  NodeConnectionTypes,
   NodeOperationError,
 } from 'n8n-workflow';
 
 type AopxCredentials = {
   baseUrl: string;
-  apiKey?: string;
 };
 
 type SearchProfile = 'FACTUAL' | 'COMPARISON' | 'NEWS';
@@ -21,18 +23,6 @@ function trimBaseUrl(value: string): string {
   return value.replace(/\/+$/, '');
 }
 
-function buildHeaders(apiKey?: string): IDataObject {
-  const headers: IDataObject = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  };
-
-  if (apiKey && apiKey.trim()) {
-    headers.Authorization = `Bearer ${apiKey.trim()}`;
-  }
-
-  return headers;
-}
 
 function evidenceMetadata(profile: SearchProfile): IDataObject {
   if (profile === 'NEWS') {
@@ -59,7 +49,7 @@ export class Aopx implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'AOPX',
     name: 'aopx',
-    icon: 'file:aopx.svg',
+    icon: { light: 'file:aopx.svg', dark: 'file:aopx.svg' },
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
@@ -68,8 +58,9 @@ export class Aopx implements INodeType {
     defaults: {
       name: 'AOPX',
     },
-    inputs: ['main'],
-    outputs: ['main'],
+    usableAsTool: true,
+    inputs: [NodeConnectionTypes.Main],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       {
         name: 'aopxApi',
@@ -211,7 +202,7 @@ export class Aopx implements INodeType {
         default: 'CRITICAL',
       },
       {
-        displayName: 'Maximum Latency (ms)',
+        displayName: 'Maximum Latency (Ms)',
         name: 'maxLatencyMs',
         type: 'number',
         displayOptions: {
@@ -296,7 +287,7 @@ export class Aopx implements INodeType {
           'Whether to send latency_ms. Turn off when latency was not measured.',
       },
       {
-        displayName: 'Latency (ms)',
+        displayName: 'Latency (Ms)',
         name: 'latencyMs',
         type: 'number',
         displayOptions: {
@@ -368,7 +359,7 @@ export class Aopx implements INodeType {
         },
         default: false,
         description:
-          'Send two attempts in one outcome: primary failed, fallback executed',
+          'Whether to send two attempts in one outcome: primary failed, fallback executed',
       },
       {
         displayName: 'Primary Provider ID',
@@ -505,8 +496,6 @@ export class Aopx implements INodeType {
     const baseUrl = trimBaseUrl(
       String(credentials.baseUrl || 'https://api.aopx.fr'),
     );
-    const headers = buildHeaders(credentials.apiKey);
-
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
       try {
         const operation = this.getNodeParameter(
@@ -583,18 +572,21 @@ export class Aopx implements INodeType {
             body.region = region;
           }
 
-          const apiResponse = (await this.helpers.httpRequest({
+          const apiResponse = (await this.helpers.httpRequestWithAuthentication.call(
+            this,
+            'aopxApi',
+            {
             method: 'POST',
             url: `${baseUrl}/v1/recommend`,
-            headers,
             body,
-            json: true,
-          })) as IDataObject;
+              json: true,
+            },
+          )) as IDataObject;
 
           response = {
             ...apiResponse,
             aopx_n8n_beta: {
-              node_version: '0.1.0-beta.4',
+              node_version: '0.1.0-beta.6',
               operation: 'recommendProvider',
               ...evidenceMetadata(profile),
               execution_note:
@@ -822,18 +814,21 @@ export class Aopx implements INodeType {
             }
           }
 
-          const apiResponse = (await this.helpers.httpRequest({
+          const apiResponse = (await this.helpers.httpRequestWithAuthentication.call(
+            this,
+            'aopxApi',
+            {
             method: 'POST',
             url: `${baseUrl}/v1/outcome`,
-            headers,
             body,
-            json: true,
-          })) as IDataObject;
+              json: true,
+            },
+          )) as IDataObject;
 
           response = {
             ...apiResponse,
             aopx_n8n_beta: {
-              node_version: '0.1.0-beta.4',
+              node_version: '0.1.0-beta.6',
               operation: 'reportOutcome',
               evidence_status: 'REPORTED_PRODUCTION_OUTCOME',
               evidence_note:
@@ -854,18 +849,21 @@ export class Aopx implements INodeType {
             qs.mode = statsMode;
           }
 
-          const apiResponse = (await this.helpers.httpRequest({
+          const apiResponse = (await this.helpers.httpRequestWithAuthentication.call(
+            this,
+            'aopxApi',
+            {
             method: 'GET',
             url: `${baseUrl}/v1/public/stats`,
-            headers,
             qs,
-            json: true,
-          })) as IDataObject;
+              json: true,
+            },
+          )) as IDataObject;
 
           response = {
             ...apiResponse,
             aopx_n8n_beta: {
-              node_version: '0.1.0-beta.4',
+              node_version: '0.1.0-beta.6',
               operation: 'getPublicStats',
               evidence_note:
                 'Public stats are production-outcome aggregates. Benchmarks, tests, shadow runs, and replays are separate evidence classes.',
@@ -901,7 +899,15 @@ export class Aopx implements INodeType {
           continue;
         }
 
-        throw error;
+        if (error instanceof NodeOperationError || error instanceof NodeApiError) {
+          throw error;
+        }
+
+        throw new NodeApiError(
+          this.getNode(),
+          error as JsonObject,
+          { itemIndex },
+        );
       }
     }
 
