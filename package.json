@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-aopx",
-  "version": "0.1.0-beta.7",
+  "version": "0.1.0-beta.8",
   "description": "AOPX evidence-based provider selection for software-agent search workflows.",
   "keywords": [
     "n8n-community-node-package",
@@ -16,7 +16,7 @@
   "homepage": "https://aopx.fr",
   "author": {
     "name": "AOPX Labs",
-    "email": "contact@aopx.fr"
+    "email": "cyril.ragonet@gmail.com"
   },
   "repository": {
     "type": "git",
